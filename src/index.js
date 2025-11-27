@@ -17,10 +17,23 @@ const allowedOrigins = (process.env.CORS_ORIGINS || "*")
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
+const allowAllOrigins = allowedOrigins.includes("*");
 
 app.use(
   cors({
-    origin: allowedOrigins.includes("*") ? "*" : allowedOrigins,
+    credentials: true,
+    origin: (origin, callback) => {
+      if (!origin) {
+        // Non-browser or same-origin requests
+        return callback(null, true);
+      }
+
+      if (allowAllOrigins || allowedOrigins.includes(origin)) {
+        return callback(null, origin);
+      }
+
+      return callback(new Error("Not allowed by CORS"));
+    },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   })
 );
