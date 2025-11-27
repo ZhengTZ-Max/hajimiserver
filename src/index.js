@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
+const { list } = require('@vercel/blob');
 
 const app = express();
 
@@ -46,6 +47,34 @@ app.get('/api/posts', async (req, res) => {
     const status = error.response?.status || 502;
     res.status(status).json({
       message: 'Failed to fetch third-party data',
+      detail: error.message,
+    });
+  }
+});
+
+/**
+ * Fetch blob metadata under a given prefix via Vercel Blob list API.
+ * - Prefix acts like a "folder" path
+ * - Token is required; use env fallback for server-side defaults
+ */
+app.get('/api/blobs', async (req, res) => {
+  const prefix =
+    req.query.prefix ?? process.env.BLOB_DEFAULT_PREFIX ?? '';
+  // const token = req.query.token ?? process.env.BLOB_TOKEN;
+
+  if (!token) {
+    return res.status(400).json({
+      message: 'Missing Vercel Blob token. Provide ?token= or set BLOB_TOKEN.',
+    });
+  }
+
+  try {
+    const result = await list({ prefix, token:'vercel_blob_rw_yRljidGuz14HGgfy_ZjbdnUurMiienVAC5nvl6Z5PyufzAC' });
+    res.json(result);
+  } catch (error) {
+    const status = error.statusCode || 502;
+    res.status(status).json({
+      message: 'Failed to list blobs',
       detail: error.message,
     });
   }
